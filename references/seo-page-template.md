@@ -13,21 +13,24 @@
   site-nav（Logo + All Tools + About）
   breadcrumb（Home › Category › Tool）
   main.tool-page
-    H1 + 副标题（统一 "Free, fast, and private. No signup required."）
+    H1 + 副标题（来自 `manifest.shortBlurb`，≤80 字符，写出核心卖点）
     div.tool-container        ← 你的工具 HTML 注入这里，CSS/JS 随页面内联
-    article.tool-description  ← SEO 文章：What is / How to Use / Why Use 三段
+    article.tool-description  ← SEO 文章：What is / Use Cases / How to Use / Who Uses / Why Use
     section.related-tools     ← 同类最近 2 个工具的卡片
-  footer（© 年份自动更新 + Privacy/Terms/About）
-  common.js → analytics.js → 工具内联脚本
+  footer（© 年份自动更新 + Privacy/Terms/About/Contact）
+  common.js → analytics.js → ads.js → 工具内联脚本
 ```
 
-模板文件见 `assets/page-template.html`，占位符形如 `{{TOOL_NAME}}`。
+模板文件见 `.minitool/page-template.html`（仓库根目录下 `.minitool/` 中），占位符形如 `{{TOOL_NAME}}`。
 
 ## 2. 模板变量 ↔ manifest 字段
 
 | 占位符 | 来源 | 出现位置与约束 |
 | --- | --- | --- |
-| `{{TOOL_NAME}}` | `manifest.name` | `<title>`（`{{TOOL_NAME}} - Free Online \| Minitool`，整体 ≤60 字符）、OG/Twitter title、H1（全页仅一次）、面包屑末段、JSON-LD name |
+| `{{PAGE_TITLE}}` | `manifest.pageTitle` | `<title>`、OG/Twitter title；建议 25–60 字符，格式：「关键词 — 限定语 \| Minitool」 |
+| `{{TOOL_NAME}}` | `manifest.name` | H1（全页仅一次）、面包屑末段、JSON-LD name |
+| `{{SHORT_BLURB}}` | `manifest.shortBlurb` | H1 下方副标题，≤80 字符，写出核心卖点 |
+| `{{WHY_USE}}` | `manifest.whyUse` | Why Use 区块 `<li>` 列表；3–5 条，≥2 条为工具特有点 |
 | `{{FILE_NAME}}` | `manifest.file` | canonical / og:url / JSON-LD url：`https://minitool.io/tools/<file>`；面包屑与卡片链接 |
 | `{{META_DESCRIPTION}}` | `manifest.metaDescription` | meta description（≤155）、og:description、twitter:description |
 | `{{CATEGORY_ID}}` | `manifest.category` | 面包屑分类锚点 `../#<category>` |
@@ -35,6 +38,9 @@
 | `{{APPLICATION_CATEGORY}}` | 由 category 映射 | JSON-LD WebApplication.applicationCategory（developer-tools→DeveloperApplication，其余→UtilitiesApplication） |
 | `{{KEYWORDS}}` | `manifest.keywords` | meta keywords、首页卡片 `data-keywords`（搜索过滤用，空格连接） |
 | `{{TOOL_PURPOSE}}` | `manifest.toolPurpose` | SEO 文章 What is 段核心句、JSON-LD description |
+| `{{USE_CASES}}` | `manifest.useCases` | Common Use Cases 段落列表 |
+| `{{HOW_TO_STEPS}}` | `manifest.howToSteps` | How to Use 段落列表 |
+| `{{AUDIENCE}}` | `manifest.audience` | Who Uses This Tool? 段落 |
 
 另有两个注入位（不算变量，由集成脚本生成）：
 
@@ -44,22 +50,22 @@
 
 ## 3. 硬性 SEO 要求（模板已保证，无需在包内处理）
 
-1. `<title>` 格式 `{{TOOL_NAME}} - Free Online | Minitool`（≤60 字符）→ **name 不要太长**
+1. `<title>` 来自 `manifest.pageTitle`，建议 25–60 字符，格式：「关键词 — 限定语 | Minitool」
 2. meta description ≤155 字符，含核心关键词 + 行动号召
 3. canonical 指向 `https://minitool.io/tools/<file>`
 4. Open Graph + Twitter Card meta 完整
 5. JSON-LD ×2：WebApplication + FAQPage（3 条 Q&A，来自 manifest.faq）
 6. 面包屑 Home › Category › Tool
-7. H1 全页仅一次；副标题统一
+7. H1 全页仅一次；副标题来自 `manifest.shortBlurb`（≤80 字符，写出核心卖点）
 8. SEO 文章 250–500 词，自然融入关键词，全英文。文章必须包含以下五段，且**严禁模板化**：
    - **What is**：从 `manifest.toolPurpose` 生成，必须直接说明该工具解决的具体问题，禁止出现 “small, focused utility”“there is nothing to install” 等通用填充句。
    - **Common Use Cases**：至少 3 条、至多 4 条，必须围绕该工具的真实场景撰写，不能从其他工具复制粘贴。
    - **How to Use**：4 步以内，步骤中的动词/对象要贴合该工具的实际 UI（例如计算器用 “Enter values and click Calculate”，文本工具用 “Paste text and choose a transformation”）。
    - **Who Uses This Tool?**：一句话目标用户，必须具体（例如 “web developers debugging API payloads”，而不是 “anyone who needs a quick online tool”）。
-   - **Why Use Our {name}?**：4–5 条卖点，可保留站点通用项（Free / Privacy / Fast / Mobile Friendly），但至少要有一条和该工具特性相关。
+   - **Why Use Our {name}?**：来自 `manifest.whyUse`，3–5 条卖点，≥2 条必须是该工具特有点，禁止整段复制通用句。
 9. Related Tools 区块 2 个已发布工具
 10. 页脚版权行 `© <span id="year">`（common.js 自动更新）
-11. 引入顺序：style.css → 页面 → common.js → analytics.js → 工具内联脚本
+11. 引入顺序：style.css → 页面 → common.js → analytics.js → ads.js → 工具内联脚本
 12. 无任何外部 CDN/字体/库依赖
 
 ## 4. integrate_tool.py 对站点仓库的改动清单

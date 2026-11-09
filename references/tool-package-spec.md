@@ -97,7 +97,21 @@ zip 内仅允许以下类型（校验脚本按白名单逐文件检查）：
     "Preparing content for social posts, ads, or style guides with strict case rules.",
     "Quickly switching between developer conventions like camelCase and snake_case."
   ],
-  "audience": "writers, developers, editors, marketers, and anyone who needs consistent text capitalization."
+  "howToSteps": [
+    "Paste or type your text into the input area.",
+    "Click the target case button (UPPERCASE, lowercase, Title, camelCase, or snake_case).",
+    "Copy the converted result to your clipboard."
+  ],
+  "audience": "writers, developers, editors, marketers, and anyone who needs consistent text capitalization.",
+  "pageTitle": "Case Converter — Free Online | Minitool",
+  "shortBlurb": "Convert text between upper, lower, title, and camel case instantly. Free. No signup.",
+  "whyUse": [
+    "<strong>One-click case switching:</strong> Instantly format variable names, titles, and URLs to the exact style you need.",
+    "<strong>Covers every common convention:</strong> UPPERCASE, lowercase, Title Case, camelCase, and snake_case in a single tool.",
+    "<strong>Privacy First:</strong> All processing is client-side — your text never leaves the browser.",
+    "<strong>Fast &amp; Lightweight:</strong> Loads instantly and works without an account.",
+    "<strong>Mobile Friendly:</strong> Works comfortably on phones, tablets, and desktops."
+  ]
 }
 ```
 
@@ -114,8 +128,12 @@ zip 内仅允许以下类型（校验脚本按白名单逐文件检查）：
 | `icon` | string | 六选一：`code` / `link` / `key` / `text` / `calc` / `swap` |
 | `faq` | array | **恰好 3 条** `{q, a}`，英文问答，用于 FAQPage JSON-LD |
 | `toolPurpose` | string | 一句话用途说明，用于 SEO 文章 What is 段落，英文。**禁止**写成 “Our free online X is a small, focused utility...” 等模板句；必须直接说明该工具的功能和价值 |
-| `useCases` | array | **强烈推荐**提供 3–4 条具体使用场景，用于生成 Common Use Cases 段落。场景必须与工具真实用途相关，禁止跨工具复制粘贴 |
-| `audience` | string | **强烈推荐**一句话目标用户，用于生成 Who Uses This Tool? 段落。必须具体，不能是 “anyone who needs a quick online tool” 这类泛泛描述 |
+| `useCases` | array | **必填** 3–4 条具体使用场景，用于生成 Common Use Cases 段落。场景必须与工具真实用途相关，禁止跨工具复制粘贴 |
+| `howToSteps` | array | **必填** 3–4 条操作步骤，用于生成 How to Use 段落。动词/对象必须贴合该工具实际 UI |
+| `audience` | string | **必填**一句话目标用户，用于生成 Who Uses This Tool? 段落。必须具体，不能是 “anyone who needs a quick online tool” 这类泛泛描述 |
+| `pageTitle` | string | **必填** 页面 `<title>`，建议 25–60 字符，格式：「关键词 — 限定语 \| Minitool」 |
+| `shortBlurb` | string | **必填** H1 下方副标题，≤ 80 字符，写出核心卖点 |
+| `whyUse` | array | **必填** 3–5 条工具特有优势，可含 `<strong>` 标签；≥2 条必须是工具特有点，禁止复制通用句 |
 
 写文案前读 [seo-page-template.md](./seo-page-template.md)，弄清每个字段最终出现在页面的什么位置。
 
@@ -223,10 +241,11 @@ function copyText(text) {
 
 ### manifest.json（见 §3）
 
-- [ ] 9 个字段全部存在；`file` 为 kebab-case；`category` / `icon` 取值合法
+- [ ] 12 个字段全部存在；`file` 为 kebab-case；`category` / `icon` 取值合法
 - [ ] `desc` ≤60 字符、`metaDescription` ≤155 字符；`faq` 恰好 3 条 `{q,a}`
 - [ ] `toolPurpose` 直接说明功能，**不含** “small, focused utility”“there is nothing to install”“type or paste your input” 等模板填充句
-- [ ] （强烈推荐）`useCases` 提供 3–4 条且与工具真实场景相关；`audience` 具体，不泛泛
+- [ ] `useCases` / `howToSteps` 各提供 3–4 条且与工具真实场景相关；`audience` 具体，不泛泛
+- [ ] `pageTitle` 25–60 字符、`shortBlurb` ≤80 字符、`whyUse` 3–5 条且 ≥2 条为工具特有点
 - [ ] 全部英文文案，无拼写错误
 
 ### index.html 与资源
