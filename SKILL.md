@@ -14,7 +14,7 @@ metadata:
 **Minitool 是一个纯静态英文工具站**（https://minitool.io，零后端零构建，HTML5+CSS3+经典 JS）。
 本 skill 用于**云端定时批量生产**：每天凌晨 0 点后被调度器唤醒一次，产出 **10 个全新、互不重复、互不克隆**的工具 zip 包，按日期归档，等待统一上线。
 
-目标产物：`output/<YYYY-MM-DD>/` 目录下 10 个通过全部校验与测试的 `*.zip` + 一份 `report.md`。
+目标产物：`output/<YYYY-MM-DD>/` 目录下通过全部校验与测试的 `*.zip` + 一份 `report.md`。每批目标最多 10 个，但若同分类配额已满或质量不达标，允许少于 10 个，不要硬凑。
 
 ## 何时使用
 
@@ -24,37 +24,40 @@ metadata:
 
 ## 硬性规则（每条都必须遵守）
 
-1. **不重复**：新工具的 `file` slug 和功能都不得与「已存在清单」重复（查重流程见下）。宁可做冷门方向，也不克隆已有工具。
-2. **10 个一批**：每次定时运行必须产出恰好 10 个。因失败不足 10 个时，补足再做，report.md 里如实记录失败原因。
-3. **质量门禁**：每个 zip 必须通过 `scripts/validate_tool.py` 全部检查（退出码 0），并通过下方「测试要求」。任何一项不过 = 不交付、不计入 10 个。
-4. **按日期归档**：产出写入 `output/<当天日期 YYYY-MM-DD>/`，目录下同时写 `report.md`。
-5. **全英文 UI**：按钮、占位符、提示、报错全部英文，语气简短直接。
-6. **零外部依赖**：任何 `http(s)://` 资源引用（CDN/字体/图片/统计）一律禁止；纯前端零后端。
+1. **不重复**：新工具的 `file` slug 和功能都不得与主站 `registry.json` 重复（查重流程见下）。宁可做冷门方向，也不克隆已有工具。
+2. **每批最多 10 个**：每次定时运行目标产出不超过 10 个；若同分类配额已满或质量不达标，允许少于 10 个，report.md 里如实记录。
+3. **分类配额**：同一批内同分类不超过 4 个；滚动 7 天内同分类不超过 15 个。
+4. **质量门禁**：每个 zip 必须通过 `scripts/validate_tool.py` 全部检查（退出码 0），并通过下方「测试要求」。任何一项不过 = 不交付、不计入。
+5. **按日期归档**：产出写入 `output/<当天日期 YYYY-MM-DD>/`，目录下同时写 `report.md`。
+6. **全英文 UI**：按钮、占位符、提示、报错全部英文，语气简短直接。
+7. **零外部依赖**：任何 `http(s)://` 资源引用（CDN/字体/图片/统计）一律禁止；纯前端零后端。
 
 ## 每日工作流程
 
 ### 第 0 步：查重（必做，开工前）
 
-1. 读 [existing-tools.md](existing-tools.md) 防重复档案（权威清单）
-2. 用 `curl -s "https://minitool.io/?cachebust=$(date +%s)"` 抓站点原始 HTML，grep `tools/` 链接核对最新 slug 列表
-   - **禁止**用 FetchURL/网页摘要类工具核对——会拿到 CDN 缓存的旧页面（本站实测踩过此坑）
-3. 两者取并集 = 「已存在清单」。今日 10 个工具的 slug 与功能均不得与之重复
+**权威来源是主站 `registry.json`**，`existing-tools.md` 仅作参考，不再手动维护。
 
-### 第 1 步：选题（10 个）
+1. 下载主站 registry：`curl -sL "https://raw.githubusercontent.com/laofudev/minitool/main/registry.json?cachebust=$(date +%s)" -o /tmp/registry.json`
+2. 解析 `tools` 数组，得到已存在 slug 列表（当前约 640+）
+3. 功能指纹查重：对每一候选工具，用 `category|input|output|algorithm|options` 五元组与已存在工具比对；同指纹视为重复
+4. 今日工具的 slug 与功能指纹均不得与已存在清单重复
 
-- 从「已存在清单」之外选 10 个有真实搜索需求、纯前端可实现的方向
-- **分类均衡**：尽量覆盖 `text-tools` / `developer-tools` / `calculators`，同一批内同分类不超过 5 个
-- 先列出 10 个 `file` slug，逐一与已存在清单比对，全部通过再动手
+### 第 1 步：选题（最多 10 个）
+
+- 从「已存在清单」之外选有真实搜索需求、纯前端可实现的方向
+- **分类配额**：同一批内同分类不超过 4 个；滚动 7 天同分类不超过 15 个
+- 先列出候选 `file` slug，逐一与 registry 比对，全部通过再动手
 
 ### 第 2 步：逐个开发
 
-动手前先读 [references/tool-package-spec.md](references/tool-package-spec.md) 并**严格遵守全部约束**（zip 结构、脚本外置、经典脚本、manifest 9 字段、UI 规范、复制契约），再读 [references/seo-page-template.md](references/seo-page-template.md) 确认 manifest 文案的最终落地位置。写完对照其 §5/§7 自检清单逐条打勾。
+动手前先读 [references/tool-package-spec.md](references/tool-package-spec.md) 并**严格遵守全部约束**（zip 结构、脚本外置、经典脚本、manifest 12 字段、UI 规范、复制契约），再读 [references/seo-page-template.md](references/seo-page-template.md) 确认 manifest 文案的最终落地位置。写完对照其 §5/§7 自检清单逐条打勾。
 
 ### 第 3 步：逐个质量门禁
 
 每个工具必须全部通过：
 
-1. **结构校验（硬性）**：`python3 scripts/validate_tool.py <tool.zip>` 退出码 0。其中已新增内容质量检查：`toolPurpose` 禁止模板填充句；推荐提供 `useCases`（3–4 条）和 `audience`。
+1. **结构校验（硬性）**：`python3 scripts/validate_tool.py <tool.zip>` 退出码 0。校验已升级：除原有结构规则外，`useCases` / `howToSteps` / `audience` / `pageTitle` / `shortBlurb` / `whyUse` 为必填，且内容去重。
 2. **JS 语法检查**：`node --check app.js`（及包内每个 .js）零错误
 3. **静态走查**：无内联脚本/行内事件、无 import/export、资源引用齐全、事件绑定闭环、DOM 引用存在、核心逻辑自洽
 4. **内容去重**：同一批 10 个工具的 `useCases` / `audience` / `toolPurpose` 不能完全相同；`How to Use` 步骤不能整段复制其他工具。若发现 3 条以上通用文案重复，本批全部重写。
@@ -67,17 +70,17 @@ metadata:
 - 全部完成后写 `output/<YYYY-MM-DD>/report.md`：日期、10 个工具（slug/分类/测试结果/是否浏览器实测）、失败与重试记录
 - 把 10 个新工具追加到 [existing-tools.md](existing-tools.md)（日期 / 工具名 / slug / 分类）
 
-### 第 5 步：自动上线（可选，默认关闭）
+### 第 5 步：上线（人工审核，禁止自动 push）
 
-若环境变量 `MINITOOL_SITE_REPO` 配置了站点仓库地址（如 `git@github.com:laofudev/minitool.git`），则自动推送到 `incoming/` 触发 CI 集成：
+**本 skill 不再自动推送到主站 `incoming/`。** 每日产出保留在 `output/<date>/`，等待人工审核后再通过主站 CI 上线。
 
-1. clone（或复用缓存克隆）`$MINITOOL_SITE_REPO`
-2. 把当日 `output/<date>/*.zip` 复制进仓库 `incoming/`（新工具用 `<file>.zip`；更新已有工具才用 `<file>-update.zip`）
-3. `git add incoming/ && git commit -m "daily tools: <date>" && git push`
+人工上线流程（由站长或授权助手执行）：
+
+1. 复核当日 `output/<date>/report.md`，确认每个 zip 都通过质量门禁
+2. 把 zip 复制进主站仓库 `incoming/`（新工具用 `<file>.zip`；更新已有工具用 `<file>-update.zip`）
+3. 提交并 push 主站仓库，触发 `.github/workflows/tool-intake.yml`
 4. CI 自动校验并集成每个 zip；失败的 zip 留在 `incoming/` 并生成 `FAILED-<name>.log`，需修复后重推
-5. push 后 curl 核对站点已出现新 slug，再把 [existing-tools.md](existing-tools.md) 的"待上线"状态改为"已上线"并提交本 skill 仓库
-
-**前提**：环境具备 git 与该仓库写权限（deploy key 或 PAT）；只有 10 个 zip 全部通过质量门禁才允许 push；任一 zip 未过门禁则整批不推，先修。
+5. 上线成功后，运行 `scripts/sync_existing_tools.py` 更新 [existing-tools.md](existing-tools.md)（或直接用 registry.json 作为权威来源）
 
 ## 输出目录结构
 

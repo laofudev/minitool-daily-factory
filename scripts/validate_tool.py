@@ -33,6 +33,10 @@ MANIFEST_FIELDS = (
     "name", "file", "category", "desc", "metaDescription",
     "keywords", "icon", "faq", "toolPurpose",
 )
+STRICT_FIELDS = (
+    "useCases", "howToSteps", "audience",
+    "pageTitle", "shortBlurb", "whyUse",
+)
 KEBAB_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 EXTERNAL_URL_RE = re.compile(r"https?://", re.IGNORECASE)
 XMLNS_RE = re.compile(r"xmlns(:\w+)?=\"http://www\.w3\.org/[^\"]*\"")
@@ -189,6 +193,13 @@ def check(zip_path):
 
         # 8. manifest.json
         manifest_problems = validate_manifest(zf, names)
+        # 9. strict SEO/content fields for new tools
+        try:
+            data = json.loads(zf.read("manifest.json").decode("utf-8"))
+        except (ValueError, UnicodeDecodeError, KeyError):
+            data = None
+        if isinstance(data, dict):
+            manifest_problems.extend(validate_strict_fields(data))
         report(not manifest_problems, "manifest.json complete and valid", manifest_problems)
 
     # output
@@ -283,26 +294,52 @@ def validate_manifest(zf, names):
                 problems.append("toolPurpose contains generic filler: %r" % ph)
                 break
 
-    # Optional but strongly recommended: useCases / audience
-    use_cases = data.get("useCases")
-    if use_cases is not None:
-        if not isinstance(use_cases, list) or not (3 <= len(use_cases) <= 4):
-            problems.append("useCases must be a list of 3–4 strings when provided")
-        elif not all(isinstance(u, str) and u.strip() for u in use_cases):
-            problems.append("each useCases item must be a non-empty string")
+    return problems
 
-    audience = data.get("audience")
-    if audience is not None:
-        if not isinstance(audience, str) or not audience.strip():
-            problems.append("audience must be a non-empty string when provided")
-        elif "anyone who needs" in audience.lower():
-            problems.append("audience is too generic: avoid 'anyone who needs ...'")
 
+def validate_strict_fields(data):
+    """Check SEO/content fields required for new tools."""
+    problems = []
+    for field in STRICT_FIELDS:
+        if field not in data:
+            problems.append("missing field: %s (required for new tools)" % field)
+            continue
+
+        value = data[field]
+        if field == "pageTitle":
+            if not isinstance(value, str) or not value.strip():
+                problems.append("pageTitle must be a non-empty string")
+            elif not (25 <= len(value) <= 70):
+                problems.append("pageTitle should be 25-70 chars, got %d" % len(value))
+        elif field == "shortBlurb":
+            if not isinstance(value, str) or not value.strip():
+                problems.append("shortBlurb must be a non-empty string")
+            elif len(value) > 100:
+                problems.append("shortBlurb must be <= 100 chars, got %d" % len(value))
+        elif field == "whyUse":
+            if not isinstance(value, list) or len(value) < 2:
+                problems.append("whyUse must be a list with at least 2 items")
+            else:
+                for i, item in enumerate(value):
+                    if not isinstance(item, str) or not item.strip():
+                        problems.append("whyUse[%d] must be a non-empty string" % i)
+        elif field in ("useCases", "howToSteps"):
+            if not isinstance(value, list) or len(value) < 2:
+                problems.append("%s must be a list with at least 2 items" % field)
+            else:
+                for i, item in enumerate(value):
+                    if not isinstance(item, str) or not item.strip():
+                        problems.append("%s[%d] must be a non-empty string" % (field, i))
+        elif field == "audience":
+            if not isinstance(value, str) or not value.strip():
+                problems.append("audience must be a non-empty string")
+            elif "anyone who needs" in value.lower():
+                problems.append("audience is too generic: avoid 'anyone who needs ...'")
     return problems
 
 
 def main(argv):
-    args = [a for a in argv[1:] if a != "--fix"]
+    args = [a for a in argv[1:] if a not in ("--fix", "--legacy")]
     fix = "--fix" in argv[1:]
     if len(args) != 1:
         print(__doc__.strip(), file=sys.stderr)
